@@ -1,0 +1,19 @@
+{
+  "name": "LIFEOS M",
+  "short_name": "LIFEOS M",
+  "description": "개인 모바일 할 일·일정·구매·활동 관리",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
