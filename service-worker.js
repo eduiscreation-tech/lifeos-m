@@ -1,5 +1,5 @@
-const CACHE = "lifeos-m-v0.2.1";
-const ASSETS = ["./","./index.html","./styles.css","./app.js","./config.js","./seed-data.js","./manifest.webmanifest","./icon.svg"];
+const CACHE = "lifeos-m-v0.2.2";
+const ASSETS = ["./","./index.html","./styles.css?v=022","./app.js?v=022","./config.js?v=022","./seed-data.js?v=022","./manifest.webmanifest","./icon.svg"];
 self.addEventListener("install", e => e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS))));
 self.addEventListener("activate", e => e.waitUntil(
   caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
