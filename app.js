@@ -12,6 +12,7 @@
   };
   var STATUS = ['미완료', '진행중', '완료', '보류', '위임', '취소'];
   var ROUTINE_SLOTS = ['기상', '직장', '점심', '저녁', '취침전'];
+  var AREA_OPTIONS = ['집', '직장', '가족', '건강', '투자', 'LIFEOS', '기타'];
   var NAV = [
     ['today', '오늘', '⌂'],
     ['tasks', '할 일', '✓'],
@@ -143,6 +144,7 @@
         '<button class="ghost" data-important="' + t.id + '">' + (isImportant(t) ? '★ 중요 해제' : '☆ 중요') + '</button>' +
         '<button class="ghost" data-act="진행중" data-id="' + t.id + '">진행</button>' +
         '<button class="edit" data-edit="' + t.id + '">수정</button>' +
+        '<button class="delete" data-delete="' + t.id + '">삭제</button>' +
       '</div>';
     }
     return '<div class="card"><div class="task-row">' +
@@ -194,7 +196,7 @@
     setTitle(state.tagFilter ? '#' + state.tagFilter : '할 일');
     var statusFilters = ['미완료', '진행중', '보류', '위임', '완료', '전체'];
     var scopeFilters = ['개인', '직장', '전체'];
-    var list = state.tasks.filter(function (t) { return state.tagFilter ? t.type !== '일정' : t.type === '할일'; });
+    var list = state.tasks.filter(function (t) { return t.status !== '취소' && (state.tagFilter ? t.type !== '일정' : t.type === '할일'); });
     if (state.scopeFilter !== '전체') list = list.filter(function (t) { return scopeOf(t) === state.scopeFilter; });
     if (state.filter !== '전체') list = list.filter(function (t) { return t.status === state.filter; });
     if (state.tagFilter) list = list.filter(function (t) { return tagArray(t).indexOf(state.tagFilter) >= 0; });
@@ -287,6 +289,7 @@
     document.querySelectorAll('[data-act]').forEach(function (b) { b.onclick = function () { patchTask(b.getAttribute('data-id'), { status: b.getAttribute('data-act') }); }; });
     document.querySelectorAll('[data-important]').forEach(function (b) { b.onclick = function () { var t = state.tasks.find(function (x) { return x.id === b.getAttribute('data-important'); }); if (t) patchTask(t.id, { important: !isImportant(t) }); }; });
     document.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { openEdit(b.getAttribute('data-edit')); }; });
+    document.querySelectorAll('[data-delete]').forEach(function (b) { b.onclick = function () { removeTaskFromList(b.getAttribute('data-delete')); }; });
     document.querySelectorAll('[data-start-timer]').forEach(function (b) { b.onclick = function () { startTimer(b.getAttribute('data-start-timer')); }; });
     document.querySelectorAll('[data-routine]').forEach(function (b) { b.onclick = function () { toggleRoutine(b.getAttribute('data-routine')); }; });
     document.querySelectorAll('[data-new-routine]').forEach(function (b) { b.onclick = function () { openEdit('', { type: '루틴', routine_slot: b.getAttribute('data-new-routine') }); }; });
@@ -305,6 +308,13 @@
     saveLocal();
     render();
     if (state.apiUrl && state.apiToken) await apiPost({ action: 'patchTask', id: id, patch: Object.assign({}, patch, { completed_at: t.completed_at }) });
+  }
+
+  async function removeTaskFromList(id) {
+    var t = state.tasks.find(function (x) { return x.id === id; });
+    if (!t) return;
+    await patchTask(id, { status: '취소' });
+    toast('목록에서 삭제했어.');
   }
 
   function nextLocalId() {
@@ -336,6 +346,24 @@
     if (el('routineSlotWrap') && el('editType')) el('routineSlotWrap').style.display = el('editType').value === '루틴' ? 'grid' : 'none';
   }
 
+  function renderAreaChoices(current) {
+    if (!el('editArea') || !el('editAreaChoices')) return;
+    current = current || '기타';
+    var options = AREA_OPTIONS.slice();
+    if (options.indexOf(current) < 0) options.unshift(current);
+    el('editArea').value = current;
+    el('editAreaChoices').innerHTML = options.map(function (area) {
+      return '<button type="button" class="area-option ' + (area === current ? 'active' : '') + '" data-area-choice="' + escapeHTML(area) + '">' + escapeHTML(area) + '</button>';
+    }).join('');
+    el('editAreaChoices').querySelectorAll('[data-area-choice]').forEach(function (b) {
+      b.onclick = function () {
+        var area = b.getAttribute('data-area-choice');
+        el('editArea').value = area;
+        el('editAreaChoices').querySelectorAll('[data-area-choice]').forEach(function (x) { x.classList.toggle('active', x === b); });
+      };
+    });
+  }
+
   function openEdit(id, preset) {
     preset = preset || {};
     var t = state.tasks.find(function (x) { return x.id === id; });
@@ -345,7 +373,7 @@
     el('editId').value = t ? t.id : '';
     el('editTitle').value = t ? (t.title || '') : '';
     el('editStatus').innerHTML = STATUS.map(function (s) { return '<option' + ((src.status || '미완료') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('');
-    el('editArea').value = t ? (t.area || '') : '';
+    renderAreaChoices(t ? (t.area || '기타') : (src.area || '기타'));
     el('editType').value = src.type || '할일';
     el('editList').value = t ? (t.list || '일반') : '일반';
     el('editScope').value = scopeOf(src);
@@ -482,7 +510,7 @@
     if (el('syncBtnDesktop')) el('syncBtnDesktop').onclick = function () { if (state.apiUrl && state.apiToken) syncPull(); else openSettings(); };
     render();
     if (state.apiUrl && state.apiToken) syncPull();
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=023').catch(console.warn);
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=024').catch(console.warn);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
