@@ -22,7 +22,7 @@ h1 { margin:0; font-size:28px; letter-spacing:-.03em; }
 .stat strong { display:block; font-size:22px; }
 .stat span { font-size:12px; color:var(--muted); }
 .card { background:var(--card); border:1px solid var(--line); border-radius:16px; margin:8px 0; padding:12px; box-shadow:0 1px 2px rgba(15,23,42,.03); }
-.task-row { display:grid; grid-template-columns:30px 1fr auto; gap:10px; align-items:start; }
+.task-row { display:grid; grid-template-columns:30px 1fr; gap:10px; align-items:start; }
 .num { width:28px; height:28px; border-radius:9px; display:grid; place-items:center; background:#f1f5f9; font-size:12px; font-weight:700; }
 .task-title { font-weight:700; line-height:1.35; }
 .meta { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; align-items:center; }
@@ -98,3 +98,38 @@ dialog::backdrop { background:rgba(15,23,42,.48); }
   .quick-box { position:sticky; bottom:16px; margin-top:24px; }
   .summary-grid { grid-template-columns:repeat(4,1fr); }
 }
+
+.today-progress { display:flex; align-items:baseline; gap:5px; margin:4px 2px 10px; color:var(--muted); font-size:13px; }
+.today-progress strong { color:var(--ink); font-size:28px; line-height:1; }
+.week-calendar { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin:10px 0 16px; }
+.calendar-day { position:relative; display:grid; place-items:center; gap:2px; min-height:66px; padding:7px 2px; background:#fff; border:1px solid var(--line); border-radius:13px; }
+.calendar-day span { font-size:10px; color:var(--muted); }
+.calendar-day strong { font-size:16px; }
+.calendar-day em { min-width:18px; height:18px; padding:0 5px; display:grid; place-items:center; border-radius:999px; background:#e2e8f0; color:#475569; font-style:normal; font-size:10px; }
+.calendar-day i { width:5px; height:5px; border-radius:50%; background:#e2e8f0; }
+.calendar-day.today { border-color:var(--accent); background:#eff6ff; }
+.calendar-day.today strong { color:var(--accent); }
+.micro-note { margin:-2px 2px 8px; font-size:11px; color:var(--muted); }
+.agenda-row { display:grid; grid-template-columns:150px 1fr; gap:10px; align-items:center; padding:11px 12px; margin:7px 0; background:#fff; border:1px solid var(--line); border-radius:14px; }
+.today-routine { display:grid; grid-template-columns:38px 1fr; gap:10px; align-items:center; padding:9px 10px; margin:6px 0; background:#fff; border:1px solid var(--line); border-radius:13px; }
+.today-routine.done .task-title { text-decoration:line-through; color:var(--muted); }
+.utility-panel, .filter-panel, .review-card, .advanced-fields { background:#fff; border:1px solid var(--line); border-radius:14px; margin:10px 0; }
+.utility-panel > summary, .filter-panel > summary, .review-card > summary, .advanced-fields > summary { cursor:pointer; list-style:none; padding:11px 13px; font-weight:800; font-size:12px; color:#475569; }
+.utility-panel > summary::-webkit-details-marker, .filter-panel > summary::-webkit-details-marker, .review-card > summary::-webkit-details-marker, .advanced-fields > summary::-webkit-details-marker { display:none; }
+.utility-panel[open] > summary, .filter-panel[open] > summary, .review-card[open] > summary, .advanced-fields[open] > summary { border-bottom:1px solid var(--line); }
+.utility-panel .timer-card { border-radius:0 0 14px 14px; }
+.inbox-intro { display:flex; flex-direction:column; gap:3px; margin:3px 2px 12px; }
+.inbox-intro strong { font-size:16px; }
+.inbox-intro span { font-size:12px; color:var(--muted); }
+.primary-filters { margin-bottom:8px; }
+.filter-panel { padding:0 11px 8px; }
+.filter-panel > summary { margin:0 -11px 4px; }
+.review-card { padding:0 12px 10px; }
+.review-card > summary { margin:0 -12px; }
+.review-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; margin:10px 0; }
+.review-grid > div { background:#f8fafc; border-radius:11px; padding:9px 7px; text-align:center; }
+.review-grid strong { display:block; font-size:18px; }
+.review-grid span { font-size:10px; color:var(--muted); }
+.review-card ol { margin:8px 0 0; padding-left:22px; color:#475569; font-size:12px; line-height:1.8; }
+.advanced-fields { margin:2px 0; }
+.advanced-body { display:grid; gap:12px; padding:12px; }
