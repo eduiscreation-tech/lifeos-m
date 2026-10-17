@@ -38,6 +38,11 @@ h1 { margin:0; font-size:28px; letter-spacing:-.03em; }
 .actions .done { background:#166534; }
 .actions .hold { background:#b45309; }
 .actions .edit { background:#475569; }
+.actions .delete { background:#fee2e2; color:#b91c1c; }
+.area-choices { display:flex; flex-wrap:wrap; gap:7px; margin-top:2px; }
+.area-option { background:#f1f5f9; color:#334155; border:1px solid #e2e8f0; padding:8px 11px; border-radius:999px; font-size:12px; }
+.area-option.active { background:#0f172a; color:#fff; border-color:#0f172a; }
+.area-field { grid-column:1 / -1; }
 .section-title { display:flex; justify-content:space-between; align-items:center; margin:18px 2px 8px; gap:10px; }
 .section-title h2 { font-size:17px; margin:0; }
 .empty { padding:28px 12px; text-align:center; color:var(--muted); border:1px dashed #cbd5e1; border-radius:16px; background:#fff; }
