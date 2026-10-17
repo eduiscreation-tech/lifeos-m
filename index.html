@@ -9,7 +9,7 @@
   <title>LIFEOS M</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=023">
+  <link rel="stylesheet" href="styles.css?v=024">
 </head>
 <body>
   <div class="app-shell">
@@ -54,7 +54,7 @@
       <div class="form-grid">
         <label>상태<select id="editStatus"></select></label>
         <label>구분<select id="editScope"><option>개인</option><option>직장</option></select></label>
-        <label>영역<input id="editArea" placeholder="집 / 투자 / 가족 / 학교"></label>
+        <label class="area-field">영역<div id="editAreaChoices" class="area-choices" aria-label="영역 선택"></div><input id="editArea" type="hidden"></label>
         <label>유형<select id="editType"><option>할일</option><option>루틴</option><option>구매</option><option>일정</option></select></label>
         <label>목록<input id="editList" placeholder="일반 / 다이소 / 대전집"></label>
         <label id="routineSlotWrap">루틴 구간<select id="editRoutineSlot"><option>기상</option><option>직장</option><option>점심</option><option>저녁</option><option>취침전</option></select></label>
@@ -84,8 +84,8 @@
     </form>
   </dialog>
 
-  <script src="config.js?v=023"></script>
-  <script src="seed-data.js?v=023"></script>
-  <script src="app.js?v=023"></script>
+  <script src="config.js?v=024"></script>
+  <script src="seed-data.js?v=024"></script>
+  <script src="app.js?v=024"></script>
 </body>
 </html>
