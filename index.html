@@ -9,7 +9,7 @@
   <title>LIFEOS M</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css?v=024">
+  <link rel="stylesheet" href="styles.css?v=030">
 </head>
 <body>
   <div class="app-shell">
@@ -34,12 +34,12 @@
       <section id="view"></section>
 
       <section class="quick-box">
-        <label for="quickInput">빠른 입력</label>
+        <label for="quickInput">인박스 빠른 입력</label>
         <div class="quick-row">
-          <input id="quickInput" autocomplete="off" placeholder="예: 직장: 보고서 #학교 / 3 완">
+          <input id="quickInput" autocomplete="off" placeholder="그냥 적어. 예: 세탁기 필터 주문">
           <button id="quickAdd">입력</button>
         </div>
-        <div class="quick-help">#태그 자동 등록 · 숫자 명령은 현재 화면 번호 기준</div>
+        <div class="quick-help">제목만 입력해도 됨 · 필요할 때만 직장: / #태그 / 숫자 명령 사용</div>
       </section>
     </main>
 
@@ -51,19 +51,24 @@
       <h3 id="dialogTitle">할 일</h3>
       <input type="hidden" id="editId">
       <label>제목<input id="editTitle"></label>
-      <div class="form-grid">
-        <label>상태<select id="editStatus"></select></label>
-        <label>구분<select id="editScope"><option>개인</option><option>직장</option></select></label>
-        <label class="area-field">영역<div id="editAreaChoices" class="area-choices" aria-label="영역 선택"></div><input id="editArea" type="hidden"></label>
-        <label>유형<select id="editType"><option>할일</option><option>루틴</option><option>구매</option><option>일정</option></select></label>
-        <label>목록<input id="editList" placeholder="일반 / 다이소 / 대전집"></label>
-        <label id="routineSlotWrap">루틴 구간<select id="editRoutineSlot"><option>기상</option><option>직장</option><option>점심</option><option>저녁</option><option>취침전</option></select></label>
-      </div>
-      <label class="check-label"><input id="editImportant" type="checkbox"> 중요 표시</label>
-      <label>태그<input id="editTags" placeholder="#건강 #학교 #투자"></label>
+      <label class="area-field">영역<div id="editAreaChoices" class="area-choices" aria-label="영역 선택"></div><input id="editArea" type="hidden"></label>
       <label>예정일<input id="editDue" type="datetime-local"></label>
-      <label>위임자<input id="editDelegate"></label>
-      <label>메모<textarea id="editNote"></textarea></label>
+      <label class="check-label"><input id="editImportant" type="checkbox"> 오늘 핵심 후보로 표시</label>
+      <details class="advanced-fields" id="advancedDetails">
+        <summary>상세 설정</summary>
+        <div class="advanced-body">
+          <div class="form-grid">
+            <label>상태<select id="editStatus"></select></label>
+            <label>구분<select id="editScope"><option>개인</option><option>직장</option></select></label>
+            <label>유형<select id="editType"><option>할일</option><option>루틴</option><option>구매</option><option>일정</option></select></label>
+            <label>목록<input id="editList" placeholder="일반 / 다이소 / 대전집"></label>
+            <label id="routineSlotWrap">루틴 구간<select id="editRoutineSlot"><option>기상</option><option>직장</option><option>점심</option><option>저녁</option><option>취침전</option></select></label>
+          </div>
+          <label>태그<input id="editTags" placeholder="#건강 #학교 #투자"></label>
+          <label>기다리는 사람 / 위임자<input id="editDelegate"></label>
+          <label>메모<textarea id="editNote"></textarea></label>
+        </div>
+      </details>
       <div class="dialog-actions">
         <button value="cancel" class="ghost">닫기</button>
         <button value="default" id="saveEdit">저장</button>
@@ -84,8 +89,8 @@
     </form>
   </dialog>
 
-  <script src="config.js?v=024"></script>
-  <script src="seed-data.js?v=024"></script>
-  <script src="app.js?v=024"></script>
+  <script src="config.js?v=030"></script>
+  <script src="seed-data.js?v=030"></script>
+  <script src="app.js?v=030"></script>
 </body>
 </html>
