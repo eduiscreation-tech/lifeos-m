@@ -15,7 +15,7 @@
   var AREA_OPTIONS = ['집', '직장', '가족', '건강', '투자', 'LIFEOS', '기타'];
   var NAV = [
     ['today', '오늘', '⌂'],
-    ['tasks', '할 일', '✓'],
+    ['tasks', '인박스', '＋'],
     ['routine', '루틴', '↻'],
     ['buy', '구매', '🛒'],
     ['schedule', '일정', '◷'],
@@ -40,8 +40,8 @@
   var loadedLogs = loadJSON(LS.logs, SEED.logs || []);
   var state = {
     page: 'today',
-    filter: '미완료',
-    scopeFilter: '개인',
+    filter: '실행',
+    scopeFilter: '전체',
     tagFilter: '',
     tasks: Array.isArray(loadedTasks) ? loadedTasks : [],
     logs: Array.isArray(loadedLogs) ? loadedLogs : [],
@@ -65,6 +65,14 @@
     });
   }
   function dateOnly(v) { return v ? String(v).slice(0, 10) : ''; }
+  function addDaysISO(base, days) {
+    var d = new Date(String(base) + 'T12:00:00+09:00');
+    d.setDate(d.getDate() + days);
+    return d.toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+  }
+  function statusLabel(v) {
+    return ({ '보류': '언젠가', '위임': '기다리는 중' })[v] || v;
+  }
   function formatDue(v) {
     if (!v) return '';
     var d = new Date(v);
@@ -130,19 +138,22 @@
   }
 
   function taskCard(t, n, compact) {
-    var metaVals = [t.status, scopeOf(t), t.area, t.type, t.list].filter(Boolean);
-    var meta = metaVals.map(function (x) { return '<span class="tag">' + escapeHTML(x) + '</span>'; }).join('');
+    var metaVals = [statusLabel(t.status), scopeOf(t), t.area];
+    if (t.type && t.type !== '할일') metaVals.push(t.type);
+    if (t.list && t.list !== '일반') metaVals.push(t.list);
+    var meta = metaVals.filter(Boolean).map(function (x) { return '<span class="tag">' + escapeHTML(x) + '</span>'; }).join('');
     var due = t.due_at ? '<span class="tag">' + escapeHTML(formatDue(t.due_at)) + '</span>' : '';
     var del = t.delegate ? '<span class="tag">→ ' + escapeHTML(t.delegate) + '</span>' : '';
-    var imp = isImportant(t) ? '<span class="tag important-tag">★ 중요</span>' : '';
+    var imp = isImportant(t) ? '<span class="tag important-tag">★ 오늘 핵심</span>' : '';
     var tags = tagArray(t).map(tagChip).join('');
     var actions = '';
     if (!compact) {
       actions = '<div class="actions">' +
         (t.status !== '완료' ? '<button class="done" data-act="완료" data-id="' + t.id + '">완료</button>' : '') +
-        (t.status !== '보류' ? '<button class="hold" data-act="보류" data-id="' + t.id + '">보류</button>' : '') +
-        '<button class="ghost" data-important="' + t.id + '">' + (isImportant(t) ? '★ 중요 해제' : '☆ 중요') + '</button>' +
-        '<button class="ghost" data-act="진행중" data-id="' + t.id + '">진행</button>' +
+        (t.status === '보류'
+          ? '<button class="ghost" data-act="미완료" data-id="' + t.id + '">실행으로</button>'
+          : '<button class="hold" data-act="보류" data-id="' + t.id + '">언젠가</button>') +
+        '<button class="ghost" data-important="' + t.id + '">' + (isImportant(t) ? '★ 오늘 해제' : '☆ 오늘') + '</button>' +
         '<button class="edit" data-edit="' + t.id + '">수정</button>' +
         '<button class="delete" data-delete="' + t.id + '">삭제</button>' +
       '</div>';
@@ -152,7 +163,6 @@
       '<div><div class="task-title">' + escapeHTML(t.title) + '</div>' +
       '<div class="meta">' + imp + meta + due + del + tags + '</div>' +
       (t.note ? '<div class="sub" style="margin-top:7px">' + escapeHTML(t.note) + '</div>' : '') + actions + '</div>' +
-      '<button class="ghost" data-edit="' + t.id + '" style="padding:6px 9px">⋯</button>' +
     '</div></div>';
   }
 
@@ -163,49 +173,101 @@
     return '<div class="timer-card"><div class="timer-line"><div><div class="sub" style="color:#94a3b8">현재 활동</div><strong>' + escapeHTML(state.active.activity) + '</strong></div><div><div class="timer-time" id="timerTime">00:00:00</div><button class="ghost" id="stopTimer">종료</button></div></div></div>';
   }
 
+  function renderWeekCalendar(today) {
+    var days = [];
+    for (var i = 0; i < 7; i++) {
+      var iso = addDaysISO(today, i);
+      var d = new Date(iso + 'T12:00:00+09:00');
+      var count = state.tasks.filter(function (t) { return t.status !== '취소' && dateOnly(t.due_at) === iso; }).length;
+      days.push('<div class="calendar-day ' + (i === 0 ? 'today' : '') + '">' +
+        '<span>' + new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(d) + '</span>' +
+        '<strong>' + d.getDate() + '</strong>' +
+        (count ? '<em>' + count + '</em>' : '<i></i>') +
+      '</div>');
+    }
+    return '<div class="week-calendar">' + days.join('') + '</div>';
+  }
+
+  function renderTodayRoutines(today) {
+    var routines = state.tasks.filter(function (t) { return t.type === '루틴' && t.status !== '취소'; }).sort(sortTasks);
+    if (!routines.length) return '<div class="empty compact-empty">등록된 루틴이 없어.</div>';
+    return routines.map(function (t) {
+      var done = dateOnly(t.routine_last_done) === today;
+      return '<div class="today-routine ' + (done ? 'done' : '') + '">' +
+        '<button class="routine-check ' + (done ? 'checked' : '') + '" data-routine="' + t.id + '">' + (done ? '✓' : '○') + '</button>' +
+        '<div><div class="task-title">' + escapeHTML(t.title) + '</div><div class="sub">' + escapeHTML(t.routine_slot || '기상') + '</div></div>' +
+      '</div>';
+    }).join('');
+  }
+
   function renderToday() {
     setTitle('오늘');
     var today = todayISO();
     var candidates = state.tasks.filter(function (t) {
       return isOpen(t) && t.type !== '일정' && t.type !== '루틴' && (dateOnly(t.due_at) === today || isImportant(t));
     }).sort(function (a, b) {
+      if (isImportant(a) !== isImportant(b)) return isImportant(a) ? -1 : 1;
       var at = dateOnly(a.due_at) === today, bt = dateOnly(b.due_at) === today;
       if (at !== bt) return at ? -1 : 1;
-      if (isImportant(a) !== isImportant(b)) return isImportant(a) ? -1 : 1;
       return sortTasks(a, b);
     });
+    var core = candidates.slice(0, 3);
+    var extra = Math.max(0, candidates.length - core.length);
     var doneToday = state.tasks.filter(function (t) { return dateOnly(t.completed_at) === today; }).length;
-    var dueToday = candidates.filter(function (t) { return dateOnly(t.due_at) === today; }).length;
-    var importantOpen = state.tasks.filter(function (t) { return isOpen(t) && isImportant(t) && t.type !== '일정' && t.type !== '루틴'; }).length;
-    var routineDone = state.tasks.filter(function (t) { return t.type === '루틴' && dateOnly(t.routine_last_done) === today; }).length;
-    var schedule = state.tasks.filter(function (t) { return t.type === '일정' && isOpen(t); }).sort(function (a, b) { return String(a.due_at || '').localeCompare(String(b.due_at || '')); });
-    state.visibleIds = candidates.map(function (t) { return t.id; });
-    var cards = candidates.length ? candidates.map(function (t, i) { return taskCard(t, i + 1, false); }).join('') : '<div class="empty">오늘 날짜로 지정했거나 중요 표시한 할 일이 없어.</div>';
-    var schedules = schedule.slice(0, 4).map(function (t) { return '<div class="card"><div class="schedule-time">' + escapeHTML(formatDue(t.due_at)) + '</div><div class="task-title">' + escapeHTML(t.title) + '</div></div>'; }).join('') || '<div class="empty">등록된 일정이 없어.</div>';
-    return '<div class="summary-grid">' +
-      '<div class="stat"><strong>' + dueToday + '</strong><span>오늘 지정</span></div>' +
-      '<div class="stat"><strong>' + importantOpen + '</strong><span>중요</span></div>' +
-      '<div class="stat"><strong>' + doneToday + '</strong><span>오늘 완료</span></div>' +
-      '<div class="stat"><strong>' + routineDone + '</strong><span>루틴 완료</span></div>' +
-      '</div>' + timerHTML() +
-      '<div class="section-title"><h2>오늘 할 일</h2><button class="ghost" id="newTaskBtn">+ 추가</button></div>' + cards +
-      '<div class="section-title"><h2>다가오는 일정</h2></div>' + schedules;
+    var scheduleToday = state.tasks.filter(function (t) { return t.type === '일정' && isOpen(t) && dateOnly(t.due_at) === today; })
+      .sort(function (a, b) { return String(a.due_at || '').localeCompare(String(b.due_at || '')); });
+    state.visibleIds = core.map(function (t) { return t.id; });
+    var cards = core.length ? core.map(function (t, i) { return taskCard(t, i + 1, false); }).join('') : '<div class="empty">오늘 핵심으로 정한 일이 없어. 인박스에서 ☆ 오늘을 눌러 최대 3개만 골라봐.</div>';
+    var schedules = scheduleToday.length ? scheduleToday.map(function (t) {
+      return '<div class="agenda-row"><div class="schedule-time">' + escapeHTML(formatDue(t.due_at)) + '</div><div class="task-title">' + escapeHTML(t.title) + '</div></div>';
+    }).join('') : '<div class="empty compact-empty">오늘 일정은 없어.</div>';
+    return '<div class="today-progress"><span>오늘 완료</span><strong>' + doneToday + '</strong><span>개</span></div>' +
+      renderWeekCalendar(today) +
+      '<div class="section-title"><h2>오늘 핵심 3</h2><button class="ghost" id="newTaskBtn">+ 인박스</button></div>' +
+      (extra ? '<div class="micro-note">후보 ' + candidates.length + '개 중 3개만 표시 중 · 나머지는 인박스에서 정리</div>' : '') +
+      cards +
+      '<details class="utility-panel"' + (state.active ? ' open' : '') + '><summary>집중 타이머</summary>' + timerHTML() + '</details>' +
+      '<div class="section-title"><h2>오늘 일정</h2></div>' + schedules +
+      '<div class="section-title"><h2>오늘 루틴</h2></div>' + renderTodayRoutines(today);
   }
 
   function renderTasks() {
-    setTitle(state.tagFilter ? '#' + state.tagFilter : '할 일');
-    var statusFilters = ['미완료', '진행중', '보류', '위임', '완료', '전체'];
-    var scopeFilters = ['개인', '직장', '전체'];
+    setTitle(state.tagFilter ? '#' + state.tagFilter : '인박스');
+    var statusFilters = [
+      { value: '실행', label: '실행' },
+      { value: '위임', label: '기다리는 중' },
+      { value: '보류', label: '언젠가' },
+      { value: '완료', label: '완료' },
+      { value: '전체', label: '전체' }
+    ];
+    var scopeFilters = ['전체', '개인', '직장'];
     var list = state.tasks.filter(function (t) { return t.status !== '취소' && (state.tagFilter ? t.type !== '일정' : t.type === '할일'); });
     if (state.scopeFilter !== '전체') list = list.filter(function (t) { return scopeOf(t) === state.scopeFilter; });
-    if (state.filter !== '전체') list = list.filter(function (t) { return t.status === state.filter; });
+    if (state.filter === '실행') list = list.filter(function (t) { return t.status === '미완료' || t.status === '진행중'; });
+    else if (state.filter !== '전체') list = list.filter(function (t) { return t.status === state.filter; });
     if (state.tagFilter) list = list.filter(function (t) { return tagArray(t).indexOf(state.tagFilter) >= 0; });
     list.sort(sortTasks);
     state.visibleIds = list.map(function (t) { return t.id; });
+
     var tags = allTags();
-    return '<div class="filter-label">구분</div><div class="filters">' + scopeFilters.map(function (f) { return '<button class="filter ' + (state.scopeFilter === f ? 'active' : '') + '" data-scope="' + f + '">' + f + '</button>'; }).join('') + '</div>' +
-      '<div class="filter-label">상태</div><div class="filters">' + statusFilters.map(function (f) { return '<button class="filter ' + (state.filter === f ? 'active' : '') + '" data-filter="' + f + '">' + f + '</button>'; }).join('') + '</div>' +
-      (tags.length ? '<div class="filter-label">태그</div><div class="filters"><button class="filter ' + (!state.tagFilter ? 'active' : '') + '" data-clear-tag>전체 태그</button>' + tags.map(function (t) { return '<button class="filter ' + (state.tagFilter === t ? 'active' : '') + '" data-tag="' + escapeHTML(t) + '">#' + escapeHTML(t) + '</button>'; }).join('') + '</div>' : '') +
+    var waiting = state.tasks.filter(function (t) { return t.type === '할일' && t.status === '위임'; }).length;
+    var someday = state.tasks.filter(function (t) { return t.type === '할일' && t.status === '보류'; }).length;
+    var executable = state.tasks.filter(function (t) { return t.type === '할일' && (t.status === '미완료' || t.status === '진행중'); }).length;
+    var cutoff = addDaysISO(todayISO(), -6);
+    var recentDone = state.tasks.filter(function (t) { return dateOnly(t.completed_at) >= cutoff && dateOnly(t.completed_at) <= todayISO(); }).length;
+
+    return '<div class="inbox-intro"><strong>일단 적고, 나중에 정리.</strong><span>입력할 때 분류를 끝내려 하지 않아도 돼.</span></div>' +
+      '<div class="filters primary-filters">' + statusFilters.map(function (f) { return '<button class="filter ' + (state.filter === f.value ? 'active' : '') + '" data-filter="' + f.value + '">' + f.label + '</button>'; }).join('') + '</div>' +
+      '<details class="filter-panel"><summary>필터 · 정리</summary>' +
+        '<div class="filter-label">구분</div><div class="filters">' + scopeFilters.map(function (f) { return '<button class="filter ' + (state.scopeFilter === f ? 'active' : '') + '" data-scope="' + f + '">' + f + '</button>'; }).join('') + '</div>' +
+        (tags.length ? '<div class="filter-label">태그</div><div class="filters"><button class="filter ' + (!state.tagFilter ? 'active' : '') + '" data-clear-tag>전체 태그</button>' + tags.map(function (t) { return '<button class="filter ' + (state.tagFilter === t ? 'active' : '') + '" data-tag="' + escapeHTML(t) + '">#' + escapeHTML(t) + '</button>'; }).join('') + '</div>' : '') +
+      '</details>' +
+      '<details class="review-card"><summary>주간 검토</summary><div class="review-grid">' +
+        '<div><strong>' + executable + '</strong><span>실행 가능</span></div>' +
+        '<div><strong>' + waiting + '</strong><span>기다리는 중</span></div>' +
+        '<div><strong>' + someday + '</strong><span>언젠가</span></div>' +
+        '<div><strong>' + recentDone + '</strong><span>최근 7일 완료</span></div>' +
+      '</div><ol><li>인박스에서 필요 없는 일 지우기</li><li>기다리는 일의 다음 확인 시점 보기</li><li>언젠가 목록에서 다시 살릴 일 확인하기</li><li>앞으로 7일 일정 확인하기</li></ol></details>' +
       (list.length ? list.map(function (t, i) { return taskCard(t, i + 1, false); }).join('') : '<div class="empty">조건에 맞는 항목이 없어.</div>');
   }
 
@@ -372,7 +434,7 @@
     el('dialogTitle').textContent = t ? '항목 수정' : '새 항목';
     el('editId').value = t ? t.id : '';
     el('editTitle').value = t ? (t.title || '') : '';
-    el('editStatus').innerHTML = STATUS.map(function (s) { return '<option' + ((src.status || '미완료') === s ? ' selected' : '') + '>' + s + '</option>'; }).join('');
+    el('editStatus').innerHTML = STATUS.map(function (s) { return '<option value="' + s + '"' + ((src.status || '미완료') === s ? ' selected' : '') + '>' + statusLabel(s) + '</option>'; }).join('');
     renderAreaChoices(t ? (t.area || '기타') : (src.area || '기타'));
     el('editType').value = src.type || '할일';
     el('editList').value = t ? (t.list || '일반') : '일반';
@@ -380,21 +442,27 @@
     el('editImportant').checked = isImportant(src);
     el('editRoutineSlot').value = src.routine_slot || '기상';
     el('editTags').value = tagArray(src).map(function (x) { return '#' + x; }).join(' ');
-    el('editDue').value = t && t.due_at ? String(t.due_at).slice(0, 16) : '';
+    el('editDue').value = src && src.due_at ? String(src.due_at).slice(0, 16) : '';
     el('editDelegate').value = t ? (t.delegate || '') : '';
     el('editNote').value = t ? (t.note || '') : '';
     toggleRoutineField();
+    if (el('advancedDetails')) {
+      el('advancedDetails').open = !!(t && (
+        (t.status && t.status !== '미완료') || (t.type && t.type !== '할일') ||
+        (t.list && t.list !== '일반') || t.delegate || t.note || tagArray(t).length
+      ));
+    }
     el('taskDialog').showModal();
   }
 
   async function handleQuick(raw) {
     var q = String(raw || '').trim();
     if (!q) return;
-    var m = q.match(/^(\d+)\s*(완|완료|보류|진행|진행중|취소)$/);
+    var m = q.match(/^(\d+)\s*(완|완료|보류|언젠가|진행|진행중|취소)$/);
     if (m) {
       var id = state.visibleIds[Number(m[1]) - 1];
       if (!id) return toast('현재 화면에 그 번호가 없어.');
-      var map = { '완': '완료', '완료': '완료', '보류': '보류', '진행': '진행중', '진행중': '진행중', '취소': '취소' };
+      var map = { '완': '완료', '완료': '완료', '보류': '보류', '언젠가': '보류', '진행': '진행중', '진행중': '진행중', '취소': '취소' };
       await patchTask(id, { status: map[m[2]] });
       return;
     }
@@ -415,6 +483,7 @@
     if (text.indexOf('대전집 ') === 0) { await addTask({ title: text.slice(4).trim(), type: '구매', list: '대전집', area: '대전집', scope: scope, tags: tags }); return; }
     if (text.indexOf('구매:') === 0) { await addTask({ title: text.slice(3).trim(), type: '구매', list: '일반', scope: scope, tags: tags }); return; }
     await addTask({ title: text, scope: scope, tags: tags });
+    toast('인박스에 추가했어.');
   }
 
   function startTimer(activity) { state.active = { activity: activity, start_at: nowISO() }; saveLocal(); render(); }
@@ -510,7 +579,7 @@
     if (el('syncBtnDesktop')) el('syncBtnDesktop').onclick = function () { if (state.apiUrl && state.apiToken) syncPull(); else openSettings(); };
     render();
     if (state.apiUrl && state.apiToken) syncPull();
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=024').catch(console.warn);
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=030').catch(console.warn);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
