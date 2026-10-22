@@ -282,7 +282,10 @@
         return '<div class="card routine-card ' + (done ? 'routine-done' : '') + '"><div class="routine-main">' +
           '<button class="routine-check ' + (done ? 'checked' : '') + '" data-routine="' + t.id + '">' + (done ? '✓' : '○') + '</button>' +
           '<div><div class="task-title">' + escapeHTML(t.title) + '</div><div class="meta"><span class="tag">' + escapeHTML(scopeOf(t)) + '</span>' + tagArray(t).map(tagChip).join('') + '</div></div>' +
-          '<button class="ghost" data-edit="' + t.id + '" style="padding:6px 9px">⋯</button></div></div>';
+          '<div class="routine-actions">' +
+            '<button class="ghost" data-edit="' + t.id + '">수정</button>' +
+            '<button class="routine-delete" data-delete="' + t.id + '">삭제</button>' +
+          '</div></div></div>';
       }).join('') : '<div class="empty compact-empty">' + slot + ' 루틴이 없어.</div>';
       return '<div class="routine-group"><div class="section-title"><h2>' + slot + '</h2><button class="ghost" data-new-routine="' + slot + '">+ 추가</button></div>' + body + '</div>';
     }).join('');
@@ -579,7 +582,7 @@
     if (el('syncBtnDesktop')) el('syncBtnDesktop').onclick = function () { if (state.apiUrl && state.apiToken) syncPull(); else openSettings(); };
     render();
     if (state.apiUrl && state.apiToken) syncPull();
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=031').catch(console.warn);
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=032').catch(console.warn);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
