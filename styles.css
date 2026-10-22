@@ -133,3 +133,11 @@ dialog::backdrop { background:rgba(15,23,42,.48); }
 .review-card ol { margin:8px 0 0; padding-left:22px; color:#475569; font-size:12px; line-height:1.8; }
 .advanced-fields { margin:2px 0; }
 .advanced-body { display:grid; gap:12px; padding:12px; }
+
+.routine-actions { display:flex; gap:5px; align-items:center; }
+.routine-actions button { padding:6px 8px; border-radius:9px; font-size:11px; }
+.routine-actions .routine-delete { background:#fee2e2; color:#b91c1c; }
+@media (max-width: 430px) {
+  .routine-main { grid-template-columns:38px 1fr; }
+  .routine-actions { grid-column:2; justify-content:flex-start; }
+}
