@@ -11,7 +11,7 @@
     active: 'lifeos_m_active_timer'
   };
   var STATUS = ['미완료', '진행중', '완료', '보류', '위임', '취소'];
-  var ROUTINE_SLOTS = ['기상', '직장', '점심', '저녁', '취침전'];
+  var ROUTINE_SLOTS = ['기상', '직장', '점심', '퇴근 후', '저녁', '취침전'];
   var AREA_OPTIONS = ['집', '직장', '가족', '건강', '투자', 'LIFEOS', '기타'];
   var NAV = [
     ['today', '오늘', '⌂'],
@@ -477,7 +477,7 @@
     var text = parsed.title, tags = parsed.tags, scope = '개인';
     if (/^직장\s*[:：]/.test(text)) { scope = '직장'; text = text.replace(/^직장\s*[:：]\s*/, ''); }
     else if (/^개인\s*[:：]/.test(text)) { text = text.replace(/^개인\s*[:：]\s*/, ''); }
-    m = text.match(/^루틴\s+(기상|직장|점심|저녁|취침전)\s*[:：]?\s*(.+)$/);
+    m = text.match(/^루틴\s+(기상|직장|점심|퇴근 후|저녁|취침전)\s*[:：]?\s*(.+)$/);
     if (m) { await addTask({ title: m[2].trim(), type: '루틴', routine_slot: m[1], scope: m[1] === '직장' ? '직장' : scope, tags: tags }); return; }
     if (text.indexOf('다이소 ') === 0) { await addTask({ title: text.slice(4).trim(), type: '구매', list: '다이소', area: '집', scope: scope, tags: tags }); return; }
     if (text.indexOf('대전집 ') === 0) { await addTask({ title: text.slice(4).trim(), type: '구매', list: '대전집', area: '대전집', scope: scope, tags: tags }); return; }
@@ -579,7 +579,7 @@
     if (el('syncBtnDesktop')) el('syncBtnDesktop').onclick = function () { if (state.apiUrl && state.apiToken) syncPull(); else openSettings(); };
     render();
     if (state.apiUrl && state.apiToken) syncPull();
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=030').catch(console.warn);
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=031').catch(console.warn);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
