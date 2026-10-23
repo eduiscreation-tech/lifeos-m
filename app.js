@@ -40,7 +40,7 @@
   var loadedLogs = loadJSON(LS.logs, SEED.logs || []);
   var state = {
     page: 'today',
-    filter: '실행',
+    filter: '미완료',
     scopeFilter: '전체',
     tagFilter: '',
     tasks: Array.isArray(loadedTasks) ? loadedTasks : [],
@@ -234,17 +234,18 @@
   function renderTasks() {
     setTitle(state.tagFilter ? '#' + state.tagFilter : '인박스');
     var statusFilters = [
-      { value: '실행', label: '실행' },
+      { value: '미완료', label: '미완료' },
+      { value: '진행중', label: '진행중' },
       { value: '위임', label: '기다리는 중' },
       { value: '보류', label: '언젠가' },
       { value: '완료', label: '완료' },
+      { value: '취소', label: '취소' },
       { value: '전체', label: '전체' }
     ];
     var scopeFilters = ['전체', '개인', '직장'];
-    var list = state.tasks.filter(function (t) { return t.status !== '취소' && (state.tagFilter ? t.type !== '일정' : t.type === '할일'); });
+    var list = state.tasks.filter(function (t) { return state.tagFilter ? t.type !== '일정' : t.type === '할일'; });
     if (state.scopeFilter !== '전체') list = list.filter(function (t) { return scopeOf(t) === state.scopeFilter; });
-    if (state.filter === '실행') list = list.filter(function (t) { return t.status === '미완료' || t.status === '진행중'; });
-    else if (state.filter !== '전체') list = list.filter(function (t) { return t.status === state.filter; });
+    if (state.filter !== '전체') list = list.filter(function (t) { return t.status === state.filter; });
     if (state.tagFilter) list = list.filter(function (t) { return tagArray(t).indexOf(state.tagFilter) >= 0; });
     list.sort(sortTasks);
     state.visibleIds = list.map(function (t) { return t.id; });
@@ -582,7 +583,7 @@
     if (el('syncBtnDesktop')) el('syncBtnDesktop').onclick = function () { if (state.apiUrl && state.apiToken) syncPull(); else openSettings(); };
     render();
     if (state.apiUrl && state.apiToken) syncPull();
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=032').catch(console.warn);
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=033').catch(console.warn);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
