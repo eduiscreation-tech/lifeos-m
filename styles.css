@@ -141,3 +141,12 @@ dialog::backdrop { background:rgba(15,23,42,.48); }
   .routine-main { grid-template-columns:38px 1fr; }
   .routine-actions { grid-column:2; justify-content:flex-start; }
 }
+
+.routine-datebar { display:grid; grid-template-columns:auto minmax(132px,1fr) auto auto; gap:6px; align-items:center; margin:4px 0 6px; }
+.routine-datebar input { width:100%; min-width:0; border:1px solid #cbd5e1; border-radius:11px; padding:9px 8px; background:#fff; color:var(--ink); font:inherit; }
+.routine-datebar button { padding:9px 10px; font-size:11px; white-space:nowrap; }
+.routine-date-note { margin:0 2px 14px; color:var(--muted); font-size:11px; line-height:1.45; }
+@media (max-width: 520px) {
+  .routine-datebar { grid-template-columns:1fr 1fr 1fr; }
+  .routine-datebar input { grid-column:1 / -1; grid-row:1; }
+}
