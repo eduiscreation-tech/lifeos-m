@@ -43,6 +43,7 @@
     filter: '미완료',
     scopeFilter: '전체',
     tagFilter: '',
+    routineDate: routineDefaultDate(),
     tasks: Array.isArray(loadedTasks) ? loadedTasks : [],
     logs: Array.isArray(loadedLogs) ? loadedLogs : [],
     visibleIds: [],
@@ -65,6 +66,27 @@
     });
   }
   function dateOnly(v) { return v ? String(v).slice(0, 10) : ''; }
+  function koreaHour() {
+    return Number(new Intl.DateTimeFormat('en-GB', {
+      timeZone: 'Asia/Seoul', hour: '2-digit', hourCycle: 'h23'
+    }).format(new Date()));
+  }
+  function routineDefaultDate() {
+    return koreaHour() < 4 ? addDaysISO(todayISO(), -1) : todayISO();
+  }
+  function routineHistoryArray(t) {
+    var out = [];
+    String((t && t.routine_history) || '').split(/[,s]+/).forEach(function (x) {
+      var d = dateOnly(x);
+      if (d && out.indexOf(d) < 0) out.push(d);
+    });
+    var legacy = dateOnly(t && t.routine_last_done);
+    if (legacy && out.indexOf(legacy) < 0) out.push(legacy);
+    return out.sort();
+  }
+  function isRoutineDoneOn(t, date) {
+    return routineHistoryArray(t).indexOf(dateOnly(date)) >= 0;
+  }
   function addDaysISO(base, days) {
     var d = new Date(String(base) + 'T12:00:00+09:00');
     d.setDate(d.getDate() + days);
@@ -192,9 +214,9 @@
     var routines = state.tasks.filter(function (t) { return t.type === '루틴' && t.status !== '취소'; }).sort(sortTasks);
     if (!routines.length) return '<div class="empty compact-empty">등록된 루틴이 없어.</div>';
     return routines.map(function (t) {
-      var done = dateOnly(t.routine_last_done) === today;
+      var done = isRoutineDoneOn(t, today);
       return '<div class="today-routine ' + (done ? 'done' : '') + '">' +
-        '<button class="routine-check ' + (done ? 'checked' : '') + '" data-routine="' + t.id + '">' + (done ? '✓' : '○') + '</button>' +
+        '<button class="routine-check ' + (done ? 'checked' : '') + '" data-routine="' + t.id + '" data-routine-date="' + today + '">' + (done ? '✓' : '○') + '</button>' +
         '<div><div class="task-title">' + escapeHTML(t.title) + '</div><div class="sub">' + escapeHTML(t.routine_slot || '기상') + '</div></div>' +
       '</div>';
     }).join('');
@@ -274,14 +296,24 @@
 
   function renderRoutine() {
     setTitle('루틴');
+    var selected = state.routineDate || routineDefaultDate();
+    state.routineDate = selected;
     var routines = state.tasks.filter(function (t) { return t.type === '루틴' && t.status !== '취소'; }).sort(sortTasks);
     state.visibleIds = routines.map(function (t) { return t.id; });
-    return ROUTINE_SLOTS.map(function (slot) {
+    var dateBar = '<div class="routine-datebar">' +
+      '<button class="ghost" data-routine-shift="-1">← 전날</button>' +
+      '<input id="routineDatePicker" type="date" value="' + escapeHTML(selected) + '" max="' + todayISO() + '">' +
+      '<button class="ghost" data-routine-today>오늘</button>' +
+      '<button class="ghost" data-routine-shift="1">다음날 →</button>' +
+      '</div>' +
+      '<div class="routine-date-note">' + (selected === todayISO() ? '오늘 루틴 기록' : escapeHTML(selected) + ' 루틴 기록 수정 중') +
+      ' · 자정이 지나도 날짜를 바꿔 이전 날 루틴을 체크할 수 있어.</div>';
+    var groups = ROUTINE_SLOTS.map(function (slot) {
       var list = routines.filter(function (t) { return (t.routine_slot || '기상') === slot; });
       var body = list.length ? list.map(function (t) {
-        var done = dateOnly(t.routine_last_done) === todayISO();
+        var done = isRoutineDoneOn(t, selected);
         return '<div class="card routine-card ' + (done ? 'routine-done' : '') + '"><div class="routine-main">' +
-          '<button class="routine-check ' + (done ? 'checked' : '') + '" data-routine="' + t.id + '">' + (done ? '✓' : '○') + '</button>' +
+          '<button class="routine-check ' + (done ? 'checked' : '') + '" data-routine="' + t.id + '" data-routine-date="' + selected + '">' + (done ? '✓' : '○') + '</button>' +
           '<div><div class="task-title">' + escapeHTML(t.title) + '</div><div class="meta"><span class="tag">' + escapeHTML(scopeOf(t)) + '</span>' + tagArray(t).map(tagChip).join('') + '</div></div>' +
           '<div class="routine-actions">' +
             '<button class="ghost" data-edit="' + t.id + '">수정</button>' +
@@ -290,6 +322,7 @@
       }).join('') : '<div class="empty compact-empty">' + slot + ' 루틴이 없어.</div>';
       return '<div class="routine-group"><div class="section-title"><h2>' + slot + '</h2><button class="ghost" data-new-routine="' + slot + '">+ 추가</button></div>' + body + '</div>';
     }).join('');
+    return dateBar + groups;
   }
 
   function renderBuy() {
@@ -357,7 +390,18 @@
     document.querySelectorAll('[data-edit]').forEach(function (b) { b.onclick = function () { openEdit(b.getAttribute('data-edit')); }; });
     document.querySelectorAll('[data-delete]').forEach(function (b) { b.onclick = function () { removeTaskFromList(b.getAttribute('data-delete')); }; });
     document.querySelectorAll('[data-start-timer]').forEach(function (b) { b.onclick = function () { startTimer(b.getAttribute('data-start-timer')); }; });
-    document.querySelectorAll('[data-routine]').forEach(function (b) { b.onclick = function () { toggleRoutine(b.getAttribute('data-routine')); }; });
+    document.querySelectorAll('[data-routine]').forEach(function (b) { b.onclick = function () { toggleRoutine(b.getAttribute('data-routine'), b.getAttribute('data-routine-date') || todayISO()); }; });
+    document.querySelectorAll('[data-routine-shift]').forEach(function (b) { b.onclick = function () {
+      var next = addDaysISO(state.routineDate || routineDefaultDate(), Number(b.getAttribute('data-routine-shift')) || 0);
+      if (next > todayISO()) next = todayISO();
+      state.routineDate = next; render();
+    }; });
+    document.querySelectorAll('[data-routine-today]').forEach(function (b) { b.onclick = function () { state.routineDate = todayISO(); render(); }; });
+    if (el('routineDatePicker')) el('routineDatePicker').onchange = function () {
+      var picked = el('routineDatePicker').value || todayISO();
+      state.routineDate = picked > todayISO() ? todayISO() : picked;
+      render();
+    };
     document.querySelectorAll('[data-new-routine]').forEach(function (b) { b.onclick = function () { openEdit('', { type: '루틴', routine_slot: b.getAttribute('data-new-routine') }); }; });
     if (el('newTaskBtn')) el('newTaskBtn').onclick = function () { openEdit(''); };
     if (el('stopTimer')) el('stopTimer').onclick = stopTimer;
@@ -393,7 +437,7 @@
     var t = {
       id: nextLocalId(), title: data.title, status: data.status || '미완료', area: data.area || '기타', type: data.type || '할일', list: data.list || '일반',
       created_at: todayISO(), due_at: data.due_at || '', completed_at: '', delegate: data.delegate || '', note: data.note || '', sort_order: state.tasks.length + 1,
-      scope: data.scope || '개인', important: !!data.important, routine_slot: data.routine_slot || '', tags: normalizeTags(data.tags), routine_last_done: ''
+      scope: data.scope || '개인', important: !!data.important, routine_slot: data.routine_slot || '', tags: normalizeTags(data.tags), routine_last_done: '', routine_history: ''
     };
     state.tasks.push(t); saveLocal(); render();
     if (state.apiUrl && state.apiToken) {
@@ -402,10 +446,20 @@
     }
   }
 
-  async function toggleRoutine(id) {
+  async function toggleRoutine(id, date) {
     var t = state.tasks.find(function (x) { return x.id === id; });
     if (!t) return;
-    await patchTask(id, { routine_last_done: dateOnly(t.routine_last_done) === todayISO() ? '' : todayISO() });
+    date = dateOnly(date) || todayISO();
+    var history = routineHistoryArray(t);
+    var i = history.indexOf(date);
+    var added = i < 0;
+    if (added) history.push(date); else history.splice(i, 1);
+    history.sort();
+    await patchTask(id, {
+      routine_history: history.join(','),
+      routine_last_done: history.length ? history[history.length - 1] : ''
+    });
+    toast((added ? '완료 기록 · ' : '완료 해제 · ') + date);
   }
 
   function toggleRoutineField() {
@@ -583,7 +637,7 @@
     if (el('syncBtnDesktop')) el('syncBtnDesktop').onclick = function () { if (state.apiUrl && state.apiToken) syncPull(); else openSettings(); };
     render();
     if (state.apiUrl && state.apiToken) syncPull();
-    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=033').catch(console.warn);
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) navigator.serviceWorker.register('./service-worker.js?v=034').catch(console.warn);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
